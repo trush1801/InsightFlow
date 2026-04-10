@@ -1,5 +1,3 @@
-# InsightFlow
-Data Observability &amp; Analytics Platform with Bronze-Silver-Gold Pipeline
 # 🚀 Data Observability Warehouse Platform
 
 > An end-to-end data engineering platform implementing Bronze, Silver, and Gold layers with built-in quality monitoring, profiling, lineage tracking, and machine learning capabilities.
@@ -18,6 +16,8 @@ Data Observability &amp; Analytics Platform with Bronze-Silver-Gold Pipeline
 - [Problem Statement](#-problem-statement)
 - [System Architecture](#-system-architecture)
 - [Features](#-features)
+- [RBAC](#-9-role-based-access-control-rbac)
+- [Multi-Format Support](#-10-multi-format-data-support)
 - [Data Flow](#-data-flow)
 - [Tech Stack](#-tech-stack)
 - [Project Structure](#-project-structure)
@@ -183,7 +183,41 @@ CSV Upload → Bronze (Raw) → Silver (Cleaned) → Gold (Transformed) → Dash
 
 ---
 
-### 📊 9. Interactive Dashboard
+### 🔐 9. Role-Based Access Control (RBAC)
+
+Implements a secure, privacy-focused multi-tenant architecture with three distinct roles:
+
+| Role | Permissions |
+|---|---|
+| **Admin** | Manage users, system config, view platform health — cannot access user datasets |
+| **User** | Upload datasets, run the full pipeline, view own data only |
+| **Viewer** | Read-only access to dashboards and reports for their own data |
+
+- Every dataset is linked to a `user_id` — strict data isolation enforced at the API layer
+- Users can only query, view, and manage their **own uploaded data**
+- Admin role is intentionally **scoped away from user data** to ensure privacy
+- Designed for **multi-tenant production environments**
+
+---
+
+### 📂 10. Multi-Format Data Support
+
+Supports ingestion of multiple real-world file formats beyond CSV:
+
+| Format | Status |
+|---|---|
+| CSV | ✅ Fully supported |
+| JSON | ✅ Fully supported |
+| Excel (.xlsx) | ✅ Fully supported |
+| Parquet | 🔄 Planned / Extendable |
+
+- Automatic format detection on upload
+- Unified ingestion pipeline regardless of source format
+- All formats are normalized into the same Bronze → Silver → Gold flow
+
+---
+
+### 📊 11. Interactive Dashboard
 - Real-time data quality metrics (completeness, uniqueness, validity)
 - Column-level profiling statistics
 - Anomaly alerts panel
@@ -237,18 +271,28 @@ data-observability-platform/
 │   │   │   ├── QualityMetrics.jsx
 │   │   │   ├── DataLineage.jsx
 │   │   │   ├── ProfilingStats.jsx
-│   │   │   └── AnomalyAlerts.jsx
+│   │   │   ├── AnomalyAlerts.jsx
+│   │   │   └── RoleGuard.jsx       # RBAC-aware route protection
 │   │   └── App.jsx
 │   └── package.json
 │
 ├── backend/                         # Node.js + Express API
 │   ├── routes/
-│   │   ├── ingest.js
+│   │   ├── auth.js                 # Login / register
+│   │   ├── ingest.js               # Multi-format upload handler
 │   │   ├── bronze.js
 │   │   ├── silver.js
 │   │   ├── gold.js
 │   │   ├── lineage.js
 │   │   └── quality.js
+│   ├── middleware/
+│   │   ├── auth.js                 # JWT verification
+│   │   └── rbac.js                 # Role permission checks
+│   ├── parsers/
+│   │   ├── csvParser.js
+│   │   ├── jsonParser.js
+│   │   ├── excelParser.js
+│   │   └── parquetParser.js        # Planned
 │   └── server.js
 │
 ├── ml/                              # Python ML Engine
@@ -262,9 +306,10 @@ data-observability-platform/
 │   ├── schema.sql
 │   └── migrations/
 │
-├── sample_data/                    # Sample CSVs for demo
+├── sample_data/                    # Sample files for demo
 │   ├── sales_data.csv
-│   └── hr_data.csv
+│   ├── hr_data.json
+│   └── inventory.xlsx
 │
 ├── .env.example
 ├── docker-compose.yml
@@ -339,14 +384,17 @@ ML_SERVICE_URL=http://localhost:8000
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/api/ingest` | Upload CSV file |
-| `GET` | `/api/bronze/:batchId` | Get raw Bronze data |
-| `GET` | `/api/silver/:batchId` | Get cleaned Silver data |
-| `GET` | `/api/gold/:batchId` | Get Gold analytics |
+| `POST` | `/api/auth/register` | Register new user |
+| `POST` | `/api/auth/login` | Login and get JWT token |
+| `POST` | `/api/ingest` | Upload file (CSV / JSON / Excel) |
+| `GET` | `/api/bronze/:batchId` | Get raw Bronze data (own data only) |
+| `GET` | `/api/silver/:batchId` | Get cleaned Silver data (own data only) |
+| `GET` | `/api/gold/:batchId` | Get Gold analytics (own data only) |
 | `GET` | `/api/quality/:batchId` | Get quality metrics |
 | `GET` | `/api/lineage/:batchId` | Get full data lineage |
 | `GET` | `/api/profile/:batchId` | Get profiling statistics |
 | `GET` | `/api/anomalies/:batchId` | Get anomaly detection results |
+| `GET` | `/api/admin/users` | List all users (Admin only) |
 
 ---
 
@@ -374,9 +422,9 @@ These additions will significantly strengthen the project for your portfolio and
 - [ ] Advanced ML models (Prophet for time-series, XGBoost)
 - [ ] Rule-based validation engine (custom user-defined rules)
 - [ ] Email / Slack notifications for quality alerts
-- [ ] Role-based access control (RBAC)
 - [ ] Export reports as PDF
-- [ ] Support for JSON, Parquet, and Excel file formats
+- [ ] Scheduled pipeline runs (cron jobs)
+- [ ] Cloud deployment (AWS S3 + Lambda or GCP)
 
 ---
 
@@ -399,10 +447,11 @@ This project is licensed under the MIT License — see the [LICENSE](LICENSE) fi
 
 | Domain | Skills Demonstrated |
 |---|---|
-| **Data Engineering** | Bronze/Silver/Gold pipeline, ETL, dynamic schema |
+| **Data Engineering** | Bronze/Silver/Gold pipeline, ETL, dynamic schema, multi-format ingestion |
 | **Data Warehousing** | Layered architecture, star schema, aggregations |
 | **Data Observability** | Quality monitoring, profiling, lineage tracking |
 | **Machine Learning** | Anomaly detection, predictive analytics |
+| **Security & Auth** | RBAC, user-level data isolation, multi-tenant architecture |
 | **Full-Stack Development** | React, Node.js, REST API, dual-database design |
 
-> 💼 **Resume line:** *Developed a Data Observability Warehouse platform implementing Bronze, Silver, and Gold layers with dynamic schema support, integrated data quality checks, profiling, lineage tracking, and machine learning models for anomaly detection and predictive analytics using React, Node.js, Python, and MySQL.*
+> 💼 **Resume line:** *Developed a Data Observability Warehouse platform implementing Bronze, Silver, and Gold layers with dynamic schema support, multi-format ingestion (CSV, JSON, Excel), role-based access control (RBAC) with user-level data isolation, integrated data quality checks, profiling, lineage tracking, and machine learning models for anomaly detection and predictive analytics using React, Node.js, Python, and MySQL.*
